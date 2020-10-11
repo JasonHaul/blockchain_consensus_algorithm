@@ -1,4 +1,4 @@
-package main
+package pbft
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 )
 
 //客户端使用的tcp监听
-func clientTcpListen() {
+func ClientTcpListen() {
 	listen, err := net.Listen("tcp", clientAddr)
 	if err != nil {
 		log.Panic(err)
@@ -24,13 +24,13 @@ func clientTcpListen() {
 		if err != nil {
 			log.Panic(err)
 		}
-		fmt.Println(string(b))
+		handleReply(b)
 	}
 
 }
 
 //节点使用的tcp监听
-func (p *pbft) tcpListen() {
+func (p *pbft) TcpListen() {
 	listen, err := net.Listen("tcp", p.node.addr)
 	if err != nil {
 		log.Panic(err)

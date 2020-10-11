@@ -1,34 +1,34 @@
-package main
+package pbft
 
 import (
-	"bufio"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"log"
 	"math/big"
-	"os"
 	"strings"
 	"time"
 )
 
-func clientSendMessageAndListen() {
+var SendCount int
+var GetCount int
+
+func ClientSendMessageAndListen(nodeTable map[string]string) {
+	ClientMsgMap = make(map[int]ClientMsg)
+	NodeTable = nodeTable
+	timestamp1 := time.Now().Unix()
 	//开启客户端的本地监听（主要用来接收节点的reply信息）
-	go clientTcpListen()
+	go ClientTcpListen()
 	fmt.Printf("客户端开启监听，地址：%s\n", clientAddr)
 
-	fmt.Println(" ---------------------------------------------------------------------------------")
-	fmt.Println("|  已进入PBFT测试Demo客户端，请启动全部节点后再发送消息！ :)  |")
-	fmt.Println(" ---------------------------------------------------------------------------------")
-	fmt.Println("请在下方输入要存入节点的信息：")
-	//首先通过命令行获取用户输入
-	stdReader := bufio.NewReader(os.Stdin)
+	//stdReader := bufio.NewReader(os.Stdin)
 	for {
-		data, err := stdReader.ReadString('\n')
-		if err != nil {
-			fmt.Println("Error reading from stdin")
-			panic(err)
-		}
+		data := "hello world!"
+		// data, err := stdReader.ReadString('\n')
+		// if err != nil {
+		// 	fmt.Println("Error reading from stdin")
+		// 	panic(err)
+		// }
 		r := new(Request)
 		r.Timestamp = time.Now().UnixNano()
 		r.ClientAddr = clientAddr
@@ -42,8 +42,16 @@ func clientSendMessageAndListen() {
 		fmt.Println(string(br))
 		content := jointMessage(cRequest, br)
 		//默认N0为主节点，直接把请求信息发送至N0
-		tcpDial(content, nodeTable["N0"])
+		tcpDial(content, NodeTable["N0"])
+		SendCount++
+
+		if time.Now().Unix()-timestamp1 > 60*1000 {
+			break
+		}
 	}
+
+	fmt.Printf("发送连接数：%d\n", SendCount)
+	fmt.Printf("接受连接数：%d\n", GetCount)
 }
 
 //返回一个十位数的随机数，作为msgid
@@ -58,4 +66,32 @@ func getRandom() int {
 			return int(result.Int64())
 		}
 	}
+}
+
+func handleReply(data []byte) {
+	cmd, content := splitMessage(data)
+	if cmd != "reply" {
+		return
+	}
+	r := new(Reply)
+	err := json.Unmarshal(content, r)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	clientM, ok := ClientMsgMap[r.MessageID]
+	if ok {
+		clientM.Count++
+		if clientM.Count == len(NodeTable) {
+			delete(ClientMsgMap, r.MessageID)
+			GetCount++
+		}
+	} else {
+		clientM := new(ClientMsg)
+		clientM.NodeID = r.NodeID
+		clientM.Count = 1
+		clientM.Content = r.Content
+		ClientMsgMap[r.MessageID] = *clientM
+	}
+
 }

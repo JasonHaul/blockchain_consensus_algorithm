@@ -1,4 +1,4 @@
-package main
+package pbft
 
 import (
 	"crypto"
@@ -15,14 +15,14 @@ import (
 )
 
 //如果当前目录下不存在目录Keys，则创建目录，并为各个节点生成rsa公私钥
-func genRsaKeys() {
+func GenRsaKeys() {
 	if !isExist("./Keys") {
 		fmt.Println("检测到还未生成公私钥目录，正在生成公私钥 ...")
 		err := os.Mkdir("Keys", 0644)
 		if err != nil {
 			log.Panic()
 		}
-		for i := 0; i <= 4; i++ {
+		for i := 0; i <= 9; i++ {
 			if !isExist("./Keys/N" + strconv.Itoa(i)) {
 				err := os.Mkdir("./Keys/N"+strconv.Itoa(i), 0644)
 				if err != nil {

@@ -1,4 +1,4 @@
-package main
+package pbft
 
 import (
 	"crypto/sha256"
@@ -41,15 +41,23 @@ type Commit struct {
 
 //<REPLY,v,t,c,i,r>
 type Reply struct {
+	Message
 	MessageID int
 	NodeID    string
-	Result    bool
 }
 
 type Message struct {
 	Content string
 	ID      int
 }
+
+type ClientMsg struct {
+	NodeID  string
+	Count   int
+	Content string
+}
+
+var ClientMsgMap map[int]ClientMsg
 
 const prefixCMDLength = 12
 
@@ -60,6 +68,7 @@ const (
 	cPrePrepare command = "preprepare"
 	cPrepare    command = "prepare"
 	cCommit     command = "commit"
+	cReply      command = "reply"
 )
 
 //默认前十二位为命令名称
